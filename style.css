@@ -1,0 +1,156 @@
+@import url('fonts.css');
+
+:root {
+  --indigo: #001953;
+  --yellow: #FFE000;
+  --red: #990011;
+  --darkgreen: #134F13;
+
+  /* taken from blaseball.com */
+  --blue: #007bff;
+  --indigo: #6610f2;
+  --purple: #6f42c1;
+  --pink: #e83e8c;
+  --red: #dc3545;
+  --orange: #fd7e14;
+  --yellow: #ffc107;
+  --green: #28a745;
+  --teal: #20c997;
+  --cyan: #17a2b8;
+  --white: #fff;
+  --gray: #6c757d;
+  --gray-dark: #343a40;
+  --primary: #007bff;
+  --secondary: #6c757d;
+  --success: #28a745;
+  --info: #17a2b8;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --light: #f8f9fa;
+  --dark: #343a40;
+}
+
+html {
+  background-color: black;
+  height: 100%;
+}
+
+body {
+  font-family: Open Sans, sans-serif;
+  font-size: large;
+  color: white;
+  stroke: white;
+  margin: 0;
+  min-width: 30em;
+  height: 100%;
+}
+h2 {
+  font-size: small;
+}
+
+.sidebar-cont {
+  width: 400px;
+  overflow-y: auto;
+  position: fixed;
+  bottom: 0;
+  top: 0;
+}
+
+.sidebar {
+  padding: 4ex 2em 4ex 2em;
+}
+
+.content {
+  margin-left: 400px;
+  height: 100%;
+}
+
+.team-selector {
+  height: 140px;
+  display: flex;
+}
+
+.team {
+  display: flex;
+  height: 100px;
+  width: 100px;
+  font-size: 70px;
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+}
+
+.team:hover {
+  height: 115px;
+  width: 115px;
+}
+
+.team .selected {
+  height: 115px;
+  width: 115px;
+}
+
+.body {
+
+}
+
+
+.dark {
+  color: black; stroke: black;
+}
+.dark text, .dark tspan { fill: black; }
+
+.hide {
+  visibility: hidden;
+  opacity: 0;
+}
+:not(.hide) {
+  visibility: visible;
+  opacity: 1;
+  transition: stroke 1s linear, color 1s linear, fill 1s linear, opacity 0.5s linear;
+}
+
+.flex {
+  display: flex;
+  flex-direction: column;
+}
+
+.text {
+  /*min-width: 20em;*/
+  max-width: 40em;
+  clear: right;
+}
+.text ~ .text {
+  padding-top: 2em;
+}
+
+.dim {
+  border-bottom: 1px dotted;
+  position: relative;
+  display: inline-block;
+}
+
+.dim .tooltip {
+  visibility: hidden;
+  width: 120px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+
+  position: absolute;
+  z-index: 1;
+  width: 5em;
+  bottom: 110%;
+  margin-left: -2.5em;
+  left: 50%;
+
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.dim:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
