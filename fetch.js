@@ -1,4 +1,4 @@
-export async function loadTeams(_force=false) {
+async function loadTeams(_force=false) {
 	//'https://cors-proxy.blaseball-reference.com/database/allTeams'
 	const response = await fetch('https://api.blaseball-reference.com/v2/teams');
 	if (!response.ok) {
@@ -24,7 +24,7 @@ export async function loadTeams(_force=false) {
 	return teams;
 }
 
-export async function loadStadiums(force=false) {
+async function loadStadiums(force=false) {
 	const response = await fetch('https://api.sibr.dev/chronicler/v1/stadiums');
 	if (!response.ok) {
 		console.error("Error fetching stadium information from chronicler:");
@@ -49,7 +49,7 @@ export async function loadStadiums(force=false) {
 	return stadiums;
 }
 
-export async function loadTeamData(team, force=false) {
+async function loadTeamData(team, force=false) {
 	/// Load extended data for a team
 
 	await teams.load(force);

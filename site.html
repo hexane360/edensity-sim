@@ -6,7 +6,10 @@
   <!--<meta name="description" content=>-->
   <meta name="author" content="hexane">
   <link href="style.css" rel="stylesheet" type="text/css">
-  <script defer type="module" src="main.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.15.0/matter.min.js"></script>
+  <script defer src="fetch.js"></script>
+  <script defer src="main.js"></script>
+  <script defer src="sim.js"></script>
 </head>
 <body>
   <div class="sidebar-cont">
@@ -26,6 +29,7 @@
     <div class="body">
       <h1>eDensity for the <span class="team-icon"></span> <span class="team-name">Boston Flowers</span>:</h1>
     </div>
+    <div id="sim"><canvas id="canvas"></canvas></div>
   </div>
   <!--
     Credits:

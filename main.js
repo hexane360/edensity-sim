@@ -1,7 +1,15 @@
-import { loadTeams, loadTeamData, loadStadiums } from "./fetch.js";
+//import { loadTeams, loadTeamData, loadStadiums } from "./fetch.js";
+
+//import { loadSimulation } from "./sim.js";
+
+var simulation = null;
 
 window.onload = function () {
-	console.log("Loaded");
+	simulation = new Simulation(document.getElementById('canvas'));
+	simulation.run();
+	console.log("Loaded simulation");
+
+	updateSimulation(); // start loading simulation data
 };
 
 class LazyData {
@@ -123,13 +131,12 @@ function selectTeam(team) {
 	}
 }
 
-async function loadSimulation(force=false) {
+async function updateSimulation(force=false) {
 	/// Load the simulation with new team information or new logic
 	await teams.load(force);
 
-	team_name = currentTeam;
-	const [team, stadium] = await Promise.all([teamData.load(team_name, force), stadiums.load(force)]);
+	const team_name = currentTeam;
+	const [team, stads] = await Promise.all([teamData.load(team_name, force), stadiums.load(force)]);
 
-	console.log(team);
-	console.log(stadium);
+	return loadSimulation(simulation, team, stads[team_name]);
 }

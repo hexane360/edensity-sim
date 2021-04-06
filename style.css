@@ -114,8 +114,13 @@ h2 {
   font-size: 42px;
 }
 
-.body {
-
+#sim {
+  display: flex;
+  justify-content: center;
+  height: 70%;
+  min-height: 500px;
+  width: 100%;
+  margin-bottom: 2em;
 }
 
 
