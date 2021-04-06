@@ -46,17 +46,19 @@ body {
 }
 h1 {
   font-size: large;
+  margin-bottom: 2em;
 }
 h2 {
-  font-size: small;
+  font-size: medium;
 }
 
 .sidebar-cont {
-  width: 400px;
+  width: 380px;
   overflow-y: auto;
   position: fixed;
   bottom: 0;
   top: 0;
+  border-right: 2px solid;
 }
 
 .sidebar {
@@ -64,7 +66,9 @@ h2 {
 }
 
 .content {
-  margin-left: 400px;
+  margin-left: 380px;
+  margin-top: 10px;
+  padding: 0 20px;
   height: 100%;
 }
 
