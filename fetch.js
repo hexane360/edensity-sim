@@ -1,10 +1,18 @@
+function http_error(response, message) {
+	if (message) {
+		console.error(message);
+	}
+	if (response) {
+		console.error(response);
+	}
+	return null;
+}
+
 async function loadTeams(_force=false) {
 	//'https://cors-proxy.blaseball-reference.com/database/allTeams'
 	const response = await fetch('https://api.blaseball-reference.com/v2/teams');
 	if (!response.ok) {
-		console.error("Error fetching teams from blaseball.com:");
-		console.error(response);
-		return;
+		return http_error(response, "Error fetching teams from blaseball.com:");
 	}
 
 	const data = await response.json();
@@ -27,9 +35,7 @@ async function loadTeams(_force=false) {
 async function loadStadiums(force=false) {
 	const response = await fetch('https://api.sibr.dev/chronicler/v1/stadiums');
 	if (!response.ok) {
-		console.error("Error fetching stadium information from chronicler:");
-		console.error(response);
-		return null;
+		return http_error(response, "Error fetching stadium information from chronicler:");
 	}
 
 	const data = await response.json();
@@ -49,15 +55,66 @@ async function loadStadiums(force=false) {
 	return stadiums;
 }
 
+async function loadNoodle(force=false) {
+	const response = await fetch('https://cors-proxy.blaseball-reference.com/api/getIdols');
+	if (!response.ok) {
+		return http_error(response, "Error fetching noodle information:");
+	}
+
+	const data = await response.json();
+	return data.data.strictlyConfidential;
+}
+
+async function loadSeason(force=false) {
+	var response = await fetch('https://api.blaseball-reference.com/v2/config');
+	if (!response.ok) {
+		return http_error(response, "Error fetching season information:");
+	}
+
+	const season_number = (await response.json()).defaults.season;
+	
+	response = await fetch(`https://cors-proxy.blaseball-reference.com/database/season?number=${season_number}`);
+	if (!response.ok) {
+		return http_error(response, "Error fetching season information:");
+	}
+	return await response.json();
+}
+
+async function loadStandings(force=false) {
+	// fetch season # (and maybe standings) from blaseball-reference
+	const standings_id = (await season.load(force)).standings;
+	if (!standings_id) { return null; }
+
+	//url escaping is for suckers
+	const response = await fetch(`https://cors-proxy.blaseball-reference.com/database/standings?id=${standings_id}`);
+	if (!response.ok) {
+		return http_error(response, "Error fetching standings:");
+	}
+	return await response.json();
+}
+
 async function loadTeamData(team, force=false) {
 	/// Load extended data for a team
 
-	await teams.load(force);
+	const team_data = (await teams.load(force)).get(team);
+	const stadium_data = (await stadiums.load(force)).get(team);
+	const standings_data = await standings.load(force);
 
 	//load players
-	//https://api.blaseball-reference.com/v1/currentRoster?slug=tacos&includeShadows=true
-	//collect soul, ego, and perk
+	const response = await fetch(`https://api.blaseball-reference.com/v1/currentRoster?slug=${team}&includeShadows=true`);
+	if (!response.ok) {
+		return http_error(response, "Error fetching roster information:");
+	}
 
-	//load stadium
-	return teams.data.get(team);
+	//fetch('https://api.blaseball-reference.com/v2/stats?type=season&group=hitting&fields=runs_batted_in&season=current&teamId=3f8bbb15-61c0-4e3f-8e4a-907a5fb1565e');
+
+	const roster = await response.json();
+
+	return {
+		team: team_data,
+		runs: standings_data.runs[team_data.team_id],
+		wins: standings_data.wins[team_data.team_id],
+		stadium: stadium_data,
+		roster: roster,
+	}
 }

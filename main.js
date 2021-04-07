@@ -9,7 +9,7 @@ window.onload = function () {
 	simulation.run();
 	console.log("Loaded simulation");
 
-	updateSimulation(); // start loading simulation data
+	loadSimulation(); // start loading simulation data
 };
 
 class LazyData {
@@ -67,9 +67,12 @@ class MemoizedData extends Map {
 }
 
 var currentTeam = 'flowers';
+const season = new LazyData(loadSeason);
+const standings = new LazyData(loadStandings);
 const teams = new LazyData(loadTeams); // store of basic team information, indexed by slug
 const teamData = new MemoizedData(loadTeamData); // store of extended team data, indexed by slug
 const stadiums = new LazyData(loadStadiums); // store of stadiums, indexed by team slug
+const noodle = new LazyData(loadNoodle); // stores current noodle position
 
 teams._byUUID = null;
 Object.defineProperty(teams, 'byUUID', {get: function() {
@@ -131,12 +134,12 @@ function selectTeam(team) {
 	}
 }
 
-async function updateSimulation(force=false) {
+async function loadSimulation(force=false) {
 	/// Load the simulation with new team information or new logic
 	await teams.load(force);
 
 	const team_name = currentTeam;
-	const [team, stads] = await Promise.all([teamData.load(team_name, force), stadiums.load(force)]);
+	const [data, n] = await Promise.all([teamData.load(team_name, force), noodle.load(force)]);
 
-	return loadSimulation(simulation, team, stads[team_name]);
+	return updateSimulationData(simulation, data, n);
 }

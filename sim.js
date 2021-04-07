@@ -88,7 +88,13 @@ class Simulation {
 	}
 }
 
-function loadSimulation(simulation, team, stadium) {
+function updateSimulationData(simulation, data, noodle) {
+	console.log("team: " + data.team.url_slug);
+	console.log("roster.length: " + data.roster.length);
+	console.log("stadium: " + data.stadium.name);
+	console.log("wins: " + data.wins);
+	console.log("runs: " + data.runs);
+	console.log("noodle: " + noodle);
 	Matter.World.add(simulation.world, [makeBody(100, [25, 25])]);
 }
 
