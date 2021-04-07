@@ -122,7 +122,6 @@ function selectTeam(team) {
 		}
 	}
 	team.setAttribute('aria-pressed', 'true');
-	currentTeam = team.id;
 
 	for (const elem of document.getElementsByClassName('team-name')) {
 		elem.innerHTML = team.getAttribute('aria-label');
@@ -131,6 +130,11 @@ function selectTeam(team) {
 	for (const elem of document.getElementsByClassName('team-icon')) {
 		elem.innerHTML = team.innerHTML;
 		elem.setAttribute('style', team.getAttribute('style'));
+	}
+
+	if (currentTeam != team.id) {
+		currentTeam = team.id;
+		loadSimulation();
 	}
 }
 
@@ -141,5 +145,7 @@ async function loadSimulation(force=false) {
 	const team_name = currentTeam;
 	const [data, n] = await Promise.all([teamData.load(team_name, force), noodle.load(force)]);
 
-	return updateSimulationData(simulation, data, n);
+	if (currentTeam == team_name) {
+		return updateSimulationData(simulation, data, n);
+	}
 }

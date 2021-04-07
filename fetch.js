@@ -72,7 +72,7 @@ async function loadSeason(force=false) {
 	}
 
 	const season_number = (await response.json()).defaults.season;
-	
+
 	response = await fetch(`https://cors-proxy.blaseball-reference.com/database/season?number=${season_number}`);
 	if (!response.ok) {
 		return http_error(response, "Error fetching season information:");
@@ -111,6 +111,7 @@ async function loadTeamData(team, force=false) {
 	const roster = await response.json();
 
 	return {
+		// todo need # of championship wins
 		team: team_data,
 		runs: standings_data.runs[team_data.team_id],
 		wins: standings_data.wins[team_data.team_id],
