@@ -6,7 +6,6 @@ var simulation = null;
 
 window.onload = function () {
 	simulation = new Simulation(document.getElementById('canvas'));
-	simulation.run();
 	console.log("Loaded simulation");
 
 	loadSimulation(); // start loading simulation data

@@ -8,6 +8,9 @@ class Render {
 		this.view = view; // viewport in world coordinates
 		this.aspectRatio = this.viewWidth / this.viewHeight;
 
+		this.debugPts = {};
+		this.debugGons = {};
+
 		this.setPixelRatio();
 		this.updateCanvasBounds();
 		window.addEventListener('resize', this.updateCanvasBounds.bind(this));
@@ -133,6 +136,46 @@ class Render {
 					//console.log("label: " + part.label);
 				}
 			}
+
+			for (const prop in this.debugPts) {
+				var pt = this.debugPts[prop];
+				if (pt.x && pt.y) {
+					pt = [pt.x, pt.y];
+				}
+				c.beginPath();
+				c.arc(pt[0], pt[1], 8, 0, 2*Math.PI);
+				c.fillStyle = "#FFFF00";
+				c.fill();
+			}
+
+			for (const prop in this.debugGons) {
+				const polygon = this.debugGons[prop];
+				if (polygon.length < 2) continue;
+				c.beginPath();
+				c.moveTo(polygon[polygon.length-1].x, polygon[polygon.length-1].y);
+				for (const pt of polygon) {
+					c.lineTo(pt.x, pt.y);
+				}
+				c.closePath();
+				c.strokeStyle = "#FFFF00";
+				c.stroke();
+				c.fillStyle = "rgba(0,255,0,127)";
+				c.fill();
+			}
+		}
+
+		for (const constraint of Matter.Composite.allConstraints(this.world)) {
+			if (!constraint.render.visible) {
+				continue;
+			}
+			const ptA = Matter.Constraint.pointAWorld(constraint);
+			const ptB = Matter.Constraint.pointBWorld(constraint);
+
+			c.beginPath();
+			c.moveTo(ptA.x, ptA.y);
+			c.lineTo(ptB.x, ptB.y);
+			c.strokeStyle = "#FFFF00";
+			c.stroke();
 		}
 	}
 }
@@ -143,11 +186,19 @@ class Simulation {
 		this.engine = Matter.Engine.create();
 		this.runner = Matter.Runner.create();
 		this.world = this.engine.world;
+		this.world.gravity.y = 0;
 
-		this.canvas.onselectstart = function() { return false; };
+		this.running = false;
+
+		Matter.Events.on(this.engine, 'beforeUpdate', this.applyForces.bind(this));
+		
+		//this.canvas.onselectstart = function() { return false; };
 
 		this.simWidth = 1800;
 		this.simHeight = 1000;
+
+		this.waterHeight = this.simHeight * 0.4;
+		this.imDensity = 0.000002;
 	
 		this.spawnBounds = {
 			min: {x: this.simWidth*0.2, y: this.simWidth*0.1},
@@ -155,7 +206,7 @@ class Simulation {
 			height: this.simWidth*0.4,
 		}
 
-		this.scale = 10;
+		this.scale = 8;
 
 		this.simBounds = {
 			min: {x: 0, y: 0},
@@ -178,24 +229,84 @@ class Simulation {
 		this.render = new Render(canvas, this.world, this.simBounds);
 		this.render.addMouse(this.mouse);
 
-		this.addWalls();
-		this.clearBodies();
+		this.bodies = [];
+		this.persistentBodies = [];
+		this.constraints = [this.mouseConstraint];
+		//this.addWalls();
+		this.addStadium();
 	}
 
 	addWalls() {
 		const w = 30; // wall width
 		const opts = {isStatic: true, label: undefined, render: {visible: false}};
 		Matter.World.add(this.world, [
-			//Matter.Bodies.rectangle(50, 0, 100, 2, {isStatic: true}),
 			Matter.Bodies.rectangle(-w/2, this.simHeight/2, w, this.simHeight, opts),
 			Matter.Bodies.rectangle(this.simWidth + w/2, this.simHeight/2, w, this.simHeight, opts),
 			Matter.Bodies.rectangle(this.simWidth/2, this.simHeight, this.simWidth, w, opts),
 		]);
 	}
 
+	getCode(pt, width, height) {
+		var code = 0;
+		if (x < -width/2) {
+			code |= 1;
+		} else if (x > width/2) {
+			code |= 2;
+		} else if (y < -height/2) {
+			code |= 4;
+		} else if (y > height/2) {
+			code |= 8;
+		}
+		return code;
+	}
+
+	applyForces() {
+		//stadium center
+		const c = this.stadium.position;
+		var theta = this.stadium.angle;
+
+		var stadium_pts = [...this.stadium.vertices];
+		var water_pts = [];
+
+		for (var i = 0; i < stadium_pts.length; i++) {
+			const pt = stadium_pts[i];
+			const next = stadium_pts[(i+1) % stadium_pts.length];
+			if (pt.y > this.waterHeight) {
+				//underwater
+				water_pts.push(pt);
+				if (next.y < this.waterHeight) {
+					//but next point isn't, so find the boundary between the two
+					water_pts.push({
+						x: pt.x + (next.x - pt.x) * (pt.y - this.waterHeight) / (pt.y - next.y),
+						y: this.waterHeight,
+					});
+				}
+			} else if (next.y > this.waterHeight) {
+				//not underwater, but next point is, so find the boundary
+				water_pts.push({
+					x: next.x + (pt.x - next.x) * (next.y - this.waterHeight) / (next.y - pt.y),
+					y: this.waterHeight,
+				});
+			}
+		}
+		//this.render.debugGons.water = water_pts;
+
+		if (water_pts.length > 2) {
+			const water_area = Matter.Vertices.area(water_pts);
+			const buoyancy_center = Matter.Vertices.centre(water_pts);
+			this.render.debugPts.buoyancy = buoyancy_center;
+
+			Matter.Body.applyForce(this.stadium, buoyancy_center, {x: 0, y: -this.imDensity*water_area});
+		}
+
+		for (const body of this.bodies) {
+			body.force.y += body.mass * 1 * 0.001;
+		}
+	}
+
 	addStadium() {
 		const t = 50; // wall thickness
-		const h = this.simHeight * 0.8; // wall height
+		const h = this.simHeight * 1.2; // wall height
 		const w = this.simWidth * 0.9; // wall width
 
 		const opts = {label: undefined, render: {fillStyle: "#ffffff"}};
@@ -204,26 +315,53 @@ class Simulation {
 		const bottom = Matter.Bodies.rectangle(this.simWidth/2, (this.simHeight + h - t)/2, w - t, t, opts);
 		const top = Matter.Bodies.rectangle(this.simWidth/2, (this.simHeight - h + t)/2, w - t, t, opts);
 
-		Matter.World.add(this.world, Matter.Body.create({parts: [left, bottom, right, top]}));
+		this.stadium = Matter.Body.create({parts: [left, bottom, right, top]});
+		this.stadium.height = h;
+		this.stadium.width = w;
+		this.addBodies(this.stadium, true);
+
+		/*
+		this.stadium_spring = Matter.Constraint.create({
+			pointA: {x: this.simWidth/2, y: this.simHeight/2},
+			bodyB: this.stadium,
+			pointB: {x: 0, y: 0},
+			stiffness: 0.01,
+			length: 0.0,
+			damping: 0.0,
+		});
+		this.addConstraints(this.stadium_spring);*/
 	}
 
 	clearBodies() {
-		Matter.World.clear(this.world, true); // keeps static objects
-		this._bodies = [];
-		Matter.World.add(this.world, this.mouseConstraint);
-		this.addWalls();
+		Matter.Composite.clear(this.world, true); // keeps static objects
+		this.bodies = [];
 		this.addStadium();
+		//Matter.World.add(this.world, this.persistentBodies);
+		Matter.World.add(this.world, this.constraints);
 	}
 
-	addBodies(bodies) {
-		if (!bodies.length) { bodies = [bodies]; }
-		this._bodies = this._bodies.concat(bodies);
+	addBodies(bodies, persistent=false) {
+		bodies = [].concat(bodies);
+		if (persistent) {
+			this.persistentBodies = this.persistentBodies.concat(bodies);
+		} else {
+			this.bodies = this.bodies.concat(bodies);
+		}
 		Matter.World.add(this.world, bodies);
 	}
 
+	addConstraints(constraints) {
+		constraints = [].concat(constraints);
+		this.constraints = this.constraints.concat(constraints);
+		Matter.World.add(this.world, constraints);
+	}
+
 	run() {
-		Matter.Runner.run(this.runner, this.engine);
-		this.render.run();
+		if (!this.running) {
+			this.running = true;
+			Matter.Runner.run(this.runner, this.engine);
+			this.render.run();
+		}
 	}
 }
 
@@ -239,13 +377,14 @@ function updateSimulationData(simulation, data, noodle) {
 	console.log("runs: " + data.runs);
 	console.log("champs: " + data.champs);
 	console.log("noodle: " + noodle);
+	console.log("net shame: " + data.net_shame);
 
 	//season 14: players + runs + 10*wins + 5*netShame + 99*#champs + 5*grand + 5*fort + 500*filth + 100*parkmods
 	var bodies = [
 		[data.runs, "Runs", performanceColor],
 		[10*data.wins, "Wins", performanceColor],
 		[99*data.champs, "Champs", performanceColor],
-		//[5*data.netShame, ]
+		[5*data.net_shame, "Shame", performanceColor],
 		[500*data.stadium.filthiness, "Filthiness", stadiumColor],
 		[5*data.stadium.grandiosity, "Grandiosity", stadiumColor],
 	];
@@ -263,6 +402,7 @@ function updateSimulationData(simulation, data, noodle) {
 	simulation.clearBodies();
 	addBodiesScattered(simulation, bodies);
 	//simulation.addBodies(makeBody(100, [25, 25]));
+	simulation.run();
 }
 
 function calculatePlayerDensity(player) {
@@ -293,6 +433,9 @@ function addBodiesScattered(sim, bodyList) {
 			console.log("Invalid density passed for " + label);
 			continue;
 		}
+		if (density == 0) {
+			continue;
+		}
 		const r = Math.sqrt(Math.abs(density))*sim.scale;
 		const x = sim.spawnBounds.min.x + sim.spawnBounds.width * Math.random();
 		const y = sim.spawnBounds.min.y + sim.spawnBounds.height * Math.random();
@@ -305,7 +448,7 @@ function addBodiesScattered(sim, bodyList) {
 				textStyle: textColor(color),
 			}
 		});
-		Matter.Body.setMass(body, density);
+		Matter.Body.setMass(body, Math.abs(density));
 		bodies.push(body);
 	}
 	simulation.addBodies(bodies);

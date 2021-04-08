@@ -143,22 +143,38 @@ async function loadTeamData(team, force=false) {
 		champs.load(force)
 	]);
 
+	const team_id = team_data.get(team).team_id;
+
+	const roster = (async function() {
+		const response = await fetch(`https://api.blaseball-reference.com/v1/currentRoster?slug=${team}&includeShadows=true`);
+		if (!response.ok) {
+			return http_error(response, "Error fetching roster information:");
+		}
+		return await response.json();
+	})();
+
+	const native_team = (async function() {
+		const response = await fetch(`https://cors-proxy.blaseball-reference.com/database/team?id=${team_id}`);
+		if (!response.ok) {
+			return http_error(response, "Error fetching team information:");
+		}
+		return await response.json();
+	})();
+
+	const [roster_data, native_team_data] = await Promise.all([roster, native_team]);
 	//load players
-	const response = await fetch(`https://api.blaseball-reference.com/v1/currentRoster?slug=${team}&includeShadows=true`);
-	if (!response.ok) {
-		return http_error(response, "Error fetching roster information:");
-	}
-	const roster = await response.json();
 
 	//fetch('https://api.blaseball-reference.com/v2/stats?type=season&group=hitting&fields=runs_batted_in&season=current&teamId=3f8bbb15-61c0-4e3f-8e4a-907a5fb1565e');
 
 	return {
 		// todo need # of championship wins
 		team: team_data.get(team),
+		native_team: native_team_data,
 		stadium: stadium_data.get(team),
 		champs: champs_data.get(team),
-		runs: standings_data.runs[team_data.get(team).team_id],
-		wins: standings_data.wins[team_data.get(team).team_id],
-		roster: roster,
+		runs: standings_data.runs[team_id],
+		wins: standings_data.wins[team_id],
+		net_shame: native_team_data.totalShamings - native_team_data.totalShames,
+		roster: roster_data,
 	}
 }
