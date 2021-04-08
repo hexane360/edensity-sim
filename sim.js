@@ -56,8 +56,8 @@ class Render {
 
 		if (this.mouse) {
 			Matter.Mouse.setScale(this.mouse, {
-				x: this.viewWidth / width,
-				y: this.viewHeight / height,
+				x: this.viewWidth / this.canvas.width,
+				y: this.viewHeight / this.canvas.height,
 			});
 			Matter.Mouse.setOffset(this.mouse, this.view.min);
 		}
@@ -89,6 +89,7 @@ class Render {
 
 		c.textAlign = "center";
 		c.textBaseline = "middle";
+		c.font = "20px sans-serif";
 
 		for (const body of Matter.Composite.allBodies(this.world)) {
 			if (!Matter.Bounds.overlaps(body.bounds, this.view)) {
@@ -109,6 +110,13 @@ class Render {
 					c.arc(part.position.x, part.position.y, part.circleRadius, 0, 2*Math.PI);
 				} else {
 					// todo draw other things
+					c.beginPath();
+					c.moveTo(part.vertices[0].x, part.vertices[0].y);
+					for (const pt of part.vertices) {
+						c.lineTo(pt.x, pt.y);
+					}
+					c.lineTo(part.vertices[0].x, part.vertices[0].y);
+					c.closePath();
 				}
 				c.fillStyle = part.render.fillStyle;
 				if (part.render.lineWidth) {
@@ -119,7 +127,7 @@ class Render {
 				c.fill();
 
 				if (part.label) {
-					const maxWidth = part.circleRadius ? 2*part.circleRadius : undefined;
+					const maxWidth = part.circleRadius ? 3*part.circleRadius : undefined;
 					c.fillStyle = part.render.textStyle || "#FFFFFF";
 					c.fillText(part.label, part.position.x, part.position.y, maxWidth);
 					//console.log("label: " + part.label);
@@ -138,8 +146,14 @@ class Simulation {
 
 		this.canvas.onselectstart = function() { return false; };
 
-		this.simWidth = 1200;
+		this.simWidth = 1800;
 		this.simHeight = 1000;
+	
+		this.spawnBounds = {
+			min: {x: this.simWidth*0.2, y: this.simWidth*0.1},
+			width: this.simWidth*0.6,
+			height: this.simWidth*0.4,
+		}
 
 		this.scale = 10;
 
@@ -170,18 +184,35 @@ class Simulation {
 
 	addWalls() {
 		const w = 30; // wall width
+		const opts = {isStatic: true, label: undefined, render: {visible: false}};
 		Matter.World.add(this.world, [
 			//Matter.Bodies.rectangle(50, 0, 100, 2, {isStatic: true}),
-			Matter.Bodies.rectangle(-w/2, this.simHeight/2, w, this.simHeight, {isStatic: true, label: undefined}),
-			Matter.Bodies.rectangle(this.simWidth + w/2, this.simHeight/2, w, this.simHeight, {isStatic: true, label: undefined}),
-			Matter.Bodies.rectangle(this.simWidth/2, this.simHeight, this.simWidth, w, {isStatic: true, label: undefined}),
+			Matter.Bodies.rectangle(-w/2, this.simHeight/2, w, this.simHeight, opts),
+			Matter.Bodies.rectangle(this.simWidth + w/2, this.simHeight/2, w, this.simHeight, opts),
+			Matter.Bodies.rectangle(this.simWidth/2, this.simHeight, this.simWidth, w, opts),
 		]);
+	}
+
+	addStadium() {
+		const t = 50; // wall thickness
+		const h = this.simHeight * 0.8; // wall height
+		const w = this.simWidth * 0.9; // wall width
+
+		const opts = {label: undefined, render: {fillStyle: "#ffffff"}};
+		const left = Matter.Bodies.rectangle((this.simWidth - w + t)/2, this.simHeight/2, t, h, opts);
+		const right = Matter.Bodies.rectangle((this.simWidth + w - t)/2, this.simHeight/2, t, h, opts);
+		const bottom = Matter.Bodies.rectangle(this.simWidth/2, (this.simHeight + h - t)/2, w - t, t, opts);
+		const top = Matter.Bodies.rectangle(this.simWidth/2, (this.simHeight - h + t)/2, w - t, t, opts);
+
+		Matter.World.add(this.world, Matter.Body.create({parts: [left, bottom, right, top]}));
 	}
 
 	clearBodies() {
 		Matter.World.clear(this.world, true); // keeps static objects
 		this._bodies = [];
 		Matter.World.add(this.world, this.mouseConstraint);
+		this.addWalls();
+		this.addStadium();
 	}
 
 	addBodies(bodies) {
@@ -196,7 +227,7 @@ class Simulation {
 	}
 }
 
-const playerColor = "#00FFFF";
+const playerColor = "#0000FF";
 const performanceColor = "#FF0000";
 const stadiumColor = "#00FF00";
 
@@ -206,19 +237,25 @@ function updateSimulationData(simulation, data, noodle) {
 	console.log("stadium: " + data.stadium.name);
 	console.log("wins: " + data.wins);
 	console.log("runs: " + data.runs);
+	console.log("champs: " + data.champs);
 	console.log("noodle: " + noodle);
 
 	//season 14: players + runs + 10*wins + 5*netShame + 99*#champs + 5*grand + 5*fort + 500*filth + 100*parkmods
 	var bodies = [
-		[500*data.stadium.filthiness, "Filthiness", stadiumColor],
-		[5*data.stadium.grandiosity, "Grandiosity", stadiumColor],
-		[100*data.stadium.mods.length, "Stadium Mods", stadiumColor],
 		[data.runs, "Runs", performanceColor],
 		[10*data.wins, "Wins", performanceColor],
+		[99*data.champs, "Champs", performanceColor],
+		//[5*data.netShame, ]
+		[500*data.stadium.filthiness, "Filthiness", stadiumColor],
+		[5*data.stadium.grandiosity, "Grandiosity", stadiumColor],
 	];
 
+	for (mod of data.stadium.mods) {
+		bodies.push([100, mod, stadiumColor]);
+	}
+
 	for (player of data.roster) {
-		bodies.push([2*player.soul, player.player_name, playerColor]);
+		bodies.push([2*player.soul, player.player_name.split(" ").join("\n"), playerColor]);
 	}
 
 	//todo deal with negative shame
@@ -248,7 +285,7 @@ function textColor(color) {
 	}
 }
 
-function addBodiesScattered(simulation, bodyList) {
+function addBodiesScattered(sim, bodyList) {
 
 	var bodies = [];
 	for ([density, label, color] of bodyList) {
@@ -256,9 +293,9 @@ function addBodiesScattered(simulation, bodyList) {
 			console.log("Invalid density passed for " + label);
 			continue;
 		}
-		const r = Math.sqrt(density)*simulation.scale;
-		const x = simulation.simWidth * Math.random();
-		const y = simulation.simHeight * 0.1 * Math.random();
+		const r = Math.sqrt(Math.abs(density))*sim.scale;
+		const x = sim.spawnBounds.min.x + sim.spawnBounds.width * Math.random();
+		const y = sim.spawnBounds.min.y + sim.spawnBounds.height * Math.random();
 
 		const body = Matter.Bodies.circle(x, y, r, {
 			label: label,

@@ -73,6 +73,7 @@ const teams = new LazyData(loadTeams); // store of basic team information, index
 const teamData = new MemoizedData(loadTeamData); // store of extended team data, indexed by slug
 const stadiums = new LazyData(loadStadiums); // store of stadiums, indexed by team slug
 const noodle = new LazyData(loadNoodle); // stores current noodle position
+const champs = new LazyData(loadChampionships);
 
 teams._byUUID = null;
 Object.defineProperty(teams, 'byUUID', {get: function() {
