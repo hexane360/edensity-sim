@@ -5,6 +5,11 @@
 var simulation = null;
 
 window.onload = function () {
+	document.getElementById('selector-collapse').onclick = function() {
+		document.getElementById('team-selector').classList.toggle('collapsed');
+		simulation.render.updateCanvasBounds();
+	}
+
 	simulation = new Simulation(document.getElementById('canvas'));
 	console.log("Loaded simulation");
 
