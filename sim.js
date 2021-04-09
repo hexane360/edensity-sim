@@ -12,8 +12,24 @@ class Render {
 		this.debugGons = {};
 
 		this.setPixelRatio();
-		this.updateCanvasBounds();
 		window.addEventListener('resize', this.updateCanvasBounds.bind(this));
+
+		this.mouse = Matter.Mouse.create(this.canvas);
+		// remove unwanted event handlers
+		this.canvas.parentNode.removeEventListener('mousewheel', this.mouse.mousewheel);
+		this.canvas.parentNode.removeEventListener('DOMMouseScroll', this.mouse.mousewheel);
+
+		this.updateCanvasBounds();
+
+		this.tooltip = document.getElementById('sim-tooltip');
+		canvas.addEventListener('mousemove', this.updateTooltip.bind(this));
+		this.tooltip.addEventListener('mousemove', this.updateTooltip.bind(this));
+		this.tooltip.addEventListener('mousemove', this.mouse.mousemove);
+		this.tooltip.addEventListener('mouseup', this.mouse.mouseup);
+		this.tooltip.addEventListener('mousedown', this.mouse.mousedown);
+		this.tooltip.addEventListener('touchmove', this.mouse.mousemove);
+		this.tooltip.addEventListener('touchstart', this.mouse.mousedown);
+		this.tooltip.addEventListener('touchend', this.mouse.mouseup);
 	}
 
 	get viewHeight() { return this.view.max.y - this.view.min.y; }
@@ -30,9 +46,39 @@ class Render {
 		this.canvas.setAttribute('data-pixel-ratio', this.pixelRatio);
 	}
 
-	addMouse(mouse) {
-		this.mouse = mouse;
-		this.updateCanvasBounds();
+	updateTooltip(event) {
+		const canvasPos = this.canvas.getBoundingClientRect();
+		const position = { // position in simulation coordinates
+			x: this.view.min.x + (event.clientX - canvasPos.x) * this.viewWidth/canvasPos.width,
+			y: this.view.min.y + (event.clientY - canvasPos.y) * this.viewHeight/canvasPos.height,
+		};
+		const tooltipPos = {
+			left: event.clientX,
+			bottom: window.innerHeight - event.clientY,
+		};
+
+		var show = false;
+		for (const body of this.world.bodies) {
+			if (!body.tooltip || !Matter.Bounds.contains(body.bounds, position)) {
+				continue;
+			}
+			for (const part of body.parts) {
+				if (!Matter.Vertices.contains(part.vertices, position)) {
+					continue;
+				}
+				show = true;
+				this.tooltip.classList.add('show');
+				this.tooltip.setAttribute('style', `left: ${tooltipPos.left}px; bottom: ${tooltipPos.bottom}px;`);
+				this.tooltip.innerHTML = body.tooltip;
+				break;
+			}
+		}
+
+		if (show) {
+			this.tooltip.classList.add('show');
+		} else {
+			this.tooltip.classList.remove('show');
+		}
 	}
 
 	updateCanvasBounds() {
@@ -57,13 +103,11 @@ class Render {
 		this.canvas.style.width = width + 'px';
 		this.canvas.style.height = height + 'px';
 
-		if (this.mouse) {
-			Matter.Mouse.setScale(this.mouse, {
-				x: this.viewWidth / this.canvas.width,
-				y: this.viewHeight / this.canvas.height,
-			});
-			Matter.Mouse.setOffset(this.mouse, this.view.min);
-		}
+		Matter.Mouse.setScale(this.mouse, {
+			x: this.viewWidth / this.canvas.width,
+			y: this.viewHeight / this.canvas.height,
+		});
+		Matter.Mouse.setOffset(this.mouse, this.view.min);
 
 		this.context.setTransform(
 			this.canvas.width / this.viewWidth, 0, 0,
@@ -87,12 +131,15 @@ class Render {
 		// fill canvas with transparent
 		c.globalCompositeOperation = 'source-in';
 		c.fillStyle = "transparent";
-		c.fillRect(0, 0, canvas.width, canvas.height);
+		c.fillRect(this.view.min.x, this.view.min.y, this.viewWidth, this.viewHeight);
 		c.globalCompositeOperation = 'source-over';
 
 		c.textAlign = "center";
 		c.textBaseline = "middle";
 		c.font = "20px sans-serif";
+
+		c.fillStyle = "#000044";
+		c.fillRect(this.view.min.x, this.world.waterHeight, this.viewWidth, this.view.max.y - this.world.waterHeight);
 
 		for (const body of Matter.Composite.allBodies(this.world)) {
 			if (!Matter.Bounds.overlaps(body.bounds, this.view)) {
@@ -191,15 +238,15 @@ class Simulation {
 		this.running = false;
 
 		Matter.Events.on(this.engine, 'beforeUpdate', this.applyForces.bind(this));
-		
+
 		//this.canvas.onselectstart = function() { return false; };
 
 		this.simWidth = 1800;
 		this.simHeight = 1000;
 
-		this.waterHeight = this.simHeight * 0.4;
+		this.world.waterHeight = this.simHeight * 0.4;
 		this.imDensity = 0.000002;
-	
+
 		this.spawnBounds = {
 			min: {x: this.simWidth*0.2, y: this.simWidth*0.1},
 			width: this.simWidth*0.6,
@@ -213,21 +260,15 @@ class Simulation {
 			max: {x: this.simWidth, y: this.simHeight},
 		};
 
-		this.mouse = Matter.Mouse.create(this.canvas);
-		// remove unwanted event handlers
-		this.canvas.parentNode.removeEventListener('mousewheel', this.mouse.mousewheel);
-		this.canvas.parentNode.removeEventListener('DOMMouseScroll', this.mouse.mousewheel);
+		this.render = new Render(canvas, this.world, this.simBounds);
 
 		this.mouseConstraint = Matter.MouseConstraint.create(this.engine, {
-			mouse: this.mouse,
+			mouse: this.render.mouse,
 			constraint: {
 				stiffness: 0.2,
 				render: {visible: false}
 			}
 		});
-
-		this.render = new Render(canvas, this.world, this.simBounds);
-		this.render.addMouse(this.mouse);
 
 		this.bodies = [];
 		this.persistentBodies = [];
@@ -268,24 +309,26 @@ class Simulation {
 		var stadium_pts = [...this.stadium.vertices];
 		var water_pts = [];
 
+		const waterHeight = this.world.waterHeight;
+
 		for (var i = 0; i < stadium_pts.length; i++) {
 			const pt = stadium_pts[i];
 			const next = stadium_pts[(i+1) % stadium_pts.length];
-			if (pt.y > this.waterHeight) {
+			if (pt.y > waterHeight) {
 				//underwater
 				water_pts.push(pt);
-				if (next.y < this.waterHeight) {
+				if (next.y < waterHeight) {
 					//but next point isn't, so find the boundary between the two
 					water_pts.push({
-						x: pt.x + (next.x - pt.x) * (pt.y - this.waterHeight) / (pt.y - next.y),
-						y: this.waterHeight,
+						x: pt.x + (next.x - pt.x) * (pt.y - waterHeight) / (pt.y - next.y),
+						y: waterHeight,
 					});
 				}
-			} else if (next.y > this.waterHeight) {
+			} else if (next.y > waterHeight) {
 				//not underwater, but next point is, so find the boundary
 				water_pts.push({
-					x: next.x + (pt.x - next.x) * (next.y - this.waterHeight) / (next.y - pt.y),
-					y: this.waterHeight,
+					x: next.x + (pt.x - next.x) * (next.y - waterHeight) / (next.y - pt.y),
+					y: waterHeight,
 				});
 			}
 		}
@@ -445,6 +488,7 @@ function addBodiesScattered(sim, bodyList) {
 
 		const body = Matter.Bodies.circle(x, y, r, {
 			label: label,
+			tooltip: label,
 			gravity: Math.sign(density),
 			render: {
 				fillStyle: color,

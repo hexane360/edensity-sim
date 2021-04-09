@@ -153,7 +153,6 @@ h2 {
   margin-bottom: 2em;
 }
 
-
 .dark {
   color: black; stroke: black;
 }
@@ -189,27 +188,33 @@ h2 {
   display: inline-block;
 }
 
-.dim .tooltip {
+.dim:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 1;
   visibility: hidden;
-  width: 120px;
+  width: 10em;
+  margin-left: -5em;
+
+  margin-bottom: 5px;
+
   background-color: #555;
   color: #fff;
   text-align: center;
-  padding: 5px 0;
+  padding: 8px 0;
   border-radius: 6px;
 
-  position: absolute;
-  z-index: 1;
-  width: 5em;
-  bottom: 110%;
-  margin-left: -2.5em;
   left: 50%;
 
   opacity: 0;
   transition: opacity 0.5s;
 }
 
-.dim:hover .tooltip {
-  visibility: visible;
+.tooltip.show {
   opacity: 1;
+  visibility: visible;
 }
