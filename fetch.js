@@ -223,13 +223,11 @@ async function loadTeamData(team, force=false) {
 	const [
 		stadium_data,
 		standings_data,
-		champs_data,
 		roster_data,
 		native_team_data,
 	] = await Promise.all([
 		stadiums.load(force),
 		standings.load(force),
-		champs.load(force),
 		json_request(
 			`https://api.blaseball-reference.com/v1/currentRoster?slug=${team}&includeShadows=true`,
 			`Fetching ${team_data.nickname} roster`
@@ -247,7 +245,7 @@ async function loadTeamData(team, force=false) {
 		team: team_data,
 		native_team: native_team_data,
 		stadium: stadium_data.get(team),
-		champs: champs_data.get(team),
+		champs: native_team_data.championships,
 		runs: standings_data.runs[team_id],
 		wins: standings_data.wins[team_id],
 		net_shame: native_team_data.totalShamings - native_team_data.totalShames,
