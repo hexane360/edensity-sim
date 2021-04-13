@@ -53,16 +53,35 @@ h2 {
 }
 
 .sidebar-cont {
-  width: 30em;
+  display: flex;
+  flex-direction: row;
+  width: 20em;
   overflow-y: auto;
   position: fixed;
   bottom: 0;
   top: 0;
-  border-right: 2px solid;
+  /*border-right: 2px solid;*/
+}
+
+#sidebar-resize-target {
+  width: 6px;
+  cursor: col-resize;
+  background-color: white;
+  flex-shrink: 0;
 }
 
 .sidebar {
   padding: 1em;
+  height: calc(100% - 2em);
+  width: 100%;
+  overflow: auto;
+}
+
+.content {
+  margin-left: 20em;
+  height: 100%;
+  display: flex;
+  flex-flow: column;
 }
 
 .status div {
@@ -98,14 +117,6 @@ h2 {
 
 .setting {
  margin-top: 1.5em;
-}
-
-.content {
-  margin-left: 30em;
-  /*padding: 0 20px;*/
-  height: 100%;
-  display: flex;
-  flex-flow: column;
 }
 
 .selector {

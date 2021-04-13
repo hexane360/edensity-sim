@@ -1,11 +1,6 @@
 var simulation = null;
 
 window.onload = function () {
-	document.getElementById('selector-collapse').onclick = function() {
-		document.getElementById('team-selector').classList.toggle('collapsed');
-		simulation.render.updateCanvasBounds();
-	}
-
 	document.getElementById('reset').onclick = () => loadSimulation(false);
 
 	document.getElementById('reload').onclick = () => loadSimulation(true);
@@ -16,10 +11,55 @@ window.onload = function () {
 	loadSimulation(); // start loading simulation data
 };
 
-function updateTotalDensity(calculated, actual) {
-	document.getElementById('actualDensity').innerHTML = actual.toFixed(3);
-	document.getElementById('calcDensity').innerHTML = calculated.toFixed(3);
+document.getElementById('selector-collapse').onclick = function() {
+	document.getElementById('team-selector').classList.toggle('collapsed');
+	simulation.render.updateCanvasBounds();
 }
+
+class SidebarResizer {
+	constructor(target, sidebar, content) {
+		this.target = target;
+		this.sidebar = sidebar;
+		this.content = content;
+
+		this.boundHandler = this.handler.bind(this);
+		this.target.onmousedown = this.boundHandler;
+
+		this.xOffset = null; // holds offset between mouse & sidebar position
+	}
+
+	resize(width) {
+		this.sidebar.style.width = this.content.style.marginLeft = `${width}px`;
+		const forceRedraw = this.sidebar.getBoundingClientRect().width;
+		// schedule simulation resize
+		setTimeout(Render.prototype.updateCanvasBounds.bind(simulation.render), 0);
+	}
+
+	handler(event) {
+		if (!(event.buttons & 1)) {
+			//finish drag
+			this.xOffset = null;
+			window.removeEventListener('mousemove', this.boundHandler);
+			return;
+		}
+		if (!this.xOffset) {
+			//begin drag
+			const sidebarWidth = this.sidebar.clientWidth;
+			this.xOffset = event.clientX - sidebarWidth;
+			window.addEventListener('mousemove', this.boundHandler);
+		} else {
+			//continue drag
+			const newWidth = event.clientX - this.xOffset;
+			this.resize(newWidth);
+		}
+	}
+}
+
+const resizer = new SidebarResizer(
+	document.getElementById('sidebar-resize-target'),
+	document.querySelector('.sidebar-cont'),
+	document.querySelector('.content'),
+);
 
 class LazyData {
 	constructor(load_function) {
@@ -138,6 +178,11 @@ function makeTeamElements(teams) {
 
 		selector.appendChild(elem);
 	}
+}
+
+function updateTotalDensity(calculated, actual) {
+	document.getElementById('actualDensity').innerHTML = actual.toFixed(3);
+	document.getElementById('calcDensity').innerHTML = calculated.toFixed(3);
 }
 
 function selectTeam(team) {
