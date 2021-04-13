@@ -452,40 +452,36 @@ function updateSimulationData(simulation, data, noodle) {
 	//season 12/13: players + runs + 10*wins + 5*netShame + 99*#champs + 5*grand + 5*fort + 500*filth
 	//season 14: players + runs + 10*wins + 5*netShame + 33*#champs + 100*grand + 100*fort + 500*filth + 50*parkmods
 	var bodies = [
-		[data.runs, "Runs", performanceColor],
-		[10*data.wins, "Wins", performanceColor],
-		[5*data.net_shame, "Shame", performanceColor],
-		[33*data.champs, "Champs", performanceColor],
-		[100*data.stadium.grandiosity, "Grandiosity", stadiumColor],
-		[100*data.stadium.fortification, "Fortification", stadiumColor],
-		[500*data.stadium.filthiness, "Filthiness", stadiumColor],
+		{density: data.runs, label: "Runs", color: performanceColor, tooltip: `Total Runs: ${data.runs}`},
+		{density: 10*data.wins, label: "Wins", color: performanceColor, tooltip: `Total Wins: ${data.wins}`},
+		{density: 5*data.net_shame, label: "Shame", color: performanceColor, tooltip: `Total Net Shame: ${data.net_shame}`},
+		{density: 33*data.champs, label: "Champs", color: performanceColor, tooltip: `Championships: ${data.champs}`},
+		{density: 100*data.stadium.grandiosity, label: "Grandiosity", color: stadiumColor},
+		{density: 100*data.stadium.fortification, label: "Fortification", color: stadiumColor},
+		{density: 500*data.stadium.filthiness, label: "Filthiness", color: stadiumColor},
 	];
 
 	for (mod of data.stadium.mods) {
-		bodies.push([50, mod, stadiumColor]);
+		bodies.push({density: 50, label: mod, color: stadiumColor});
 	}
 
 	for (player of data.roster) {
-		bodies.push([player.eDensity, player.name.split(" ").join("\n"), playerColor]);
+		const totalRating = player.pitchingRating + player.baserunningRating + player.hittingRating + player.defenseRating;
+		bodies.push({
+			density: player.eDensity, label: player.name, color: playerColor,
+			tooltip: `Total rating: ${totalRating.toFixed(2)}<br>Soul: ${player.soul}`
+		});
 	}
 
 	let totalDensity = 0;
 	for (body of bodies) {
-		totalDensity += body[0];
+		totalDensity += body.density;
 	}
-
 	updateTotalDensity(totalDensity, data.team.eDensity);
 
 	simulation.clearBodies();
 	addBodiesScattered(simulation, bodies);
 	simulation.run();
-}
-
-function calculatePlayerDensity(player) {
-	//7*totalRating + 2*soul + 6.5*#ego + 26*#perk
-
-	const totalRating = player.pitchingRating + player.baserunningRating + player.hittingRating + player.defenseRating;
-	return 7*totalRating + 2*player.soul;
 }
 
 function textColor(color) {
@@ -502,33 +498,39 @@ function textColor(color) {
 	}
 }
 
-function addBodiesScattered(sim, bodyList) {
+function addBodiesScattered(sim, bodies) {
+	// takes a list of objects, with the following properties:
+	// density: eDensity of object
+	// label: Label to use for object
+	// color: Object fill color
+	// tooltip?: Custom tooltip to display (defaults to label)
 
-	var bodies = [];
-	for ([density, label, color] of bodyList) {
+	var bodiesToAdd = [];
+	for (body of bodies) {
+		const density = body.density;
+		delete body.density;
+
 		if (!isFinite(density)) {
-			console.log("Invalid density passed for " + label);
+			console.log("Invalid density passed for " + body.label);
 			continue;
 		}
-		if (density == 0) {
-			continue;
-		}
-		const r = Math.sqrt(Math.abs(density))*sim.scale;
+		if (density == 0) continue;
+
+		const r = Math.sqrt(Math.abs(density)) * sim.scale;
 		const x = sim.spawnBounds.min.x + sim.spawnBounds.width * Math.random();
 		const y = sim.spawnBounds.min.y + sim.spawnBounds.height * Math.random();
 
-		const body = Matter.Bodies.circle(x, y, r, {
-			label: label,
-			tooltip: label,
-			gravity: Math.sign(density),
-			render: {
-				fillStyle: color,
-				textStyle: textColor(color),
-			},
-			restitution: 0.1,
-		});
-		Matter.Body.setMass(body, Math.abs(density));
-		bodies.push(body);
+		body.tooltip = `${body.label}<br>eDensity: ${density.toFixed(3)}<br>` + (body.tooltip || "");
+		body.gravity = Math.sign(density);
+		body.render = {
+			fillStyle: body.color,
+			textStyle: textColor(body.color),
+		};
+		body.restitution = 0.1;
+
+		const bodyToAdd = Matter.Bodies.circle(x, y, r, body);
+		Matter.Body.setMass(bodyToAdd, Math.abs(density));
+		bodiesToAdd.push(bodyToAdd);
 	}
-	simulation.addBodies(bodies);
+	simulation.addBodies(bodiesToAdd);
 }
