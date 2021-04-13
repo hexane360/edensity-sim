@@ -1,7 +1,3 @@
-//import { loadTeams, loadTeamData, loadStadiums } from "./fetch.js";
-
-//import { loadSimulation } from "./sim.js";
-
 var simulation = null;
 
 window.onload = function () {
@@ -9,6 +5,10 @@ window.onload = function () {
 		document.getElementById('team-selector').classList.toggle('collapsed');
 		simulation.render.updateCanvasBounds();
 	}
+
+	document.getElementById('reset').onclick = () => loadSimulation(false);
+
+	document.getElementById('reload').onclick = () => loadSimulation(true);
 
 	simulation = new Simulation(document.getElementById('canvas'));
 	console.log("Loaded simulation");
@@ -20,24 +20,28 @@ class LazyData {
 	constructor(load_function) {
 		this.load_function = load_function;
 		this._data = null;
+		this._promise = null;
 	}
 
 	async load(force=false) {
 		if (this._data !== null && !force) {
 			return this._data;
 		}
-		const result = await this.load_function(force);
-		if (this._data !== null && !force) {
-			return this._data; // another request has completed while awaiting
+		if (!this._promise || force) {
+			this._promise = this._load(force);
 		}
-		this._data = result;
+		return await this._promise;
+	}
+
+	async _load(force) {
+		this._data = await this.load_function(force);
 		if (this._data !== null) {
 			this.post_load();
 		}
 		return this._data;
 	}
 
-	post_load(_first) { return; }
+	post_load() { return; }
 
 	get data() {
 		if (this._data == null) {
@@ -51,19 +55,31 @@ class MemoizedData extends Map {
 	constructor(load_function) {
 		super();
 		this.load_function = load_function;
+		this._promises = new Map();
 	}
 
 	async load(key, force=false) {
 		if (super.has(key) && !force) {
 			return super.get(key);
 		}
-		const val = await this.load_function(key, force);
-		if (super.has(key) && !force) {
-			return super.get(key); // another request has completed while awaiting
+		if (this._promises.get(key) && !force) { // another call already running
+			return await this._promises.get(key);
 		}
+		const promise = this._load(key, force);
+		this._promises.set(key, promise);
+		return await promise;
+	}
+
+	async _load(key, force) {
+		const val = await this.load_function(key, force);
 		super.set(key, val);
+		if (val !== null) {
+			this.post_load(key);
+		}
 		return val;
 	}
+
+	post_load(_key) { return; }
 
 	get(key) { return super.get(key); }
 

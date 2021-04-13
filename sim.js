@@ -346,7 +346,7 @@ class Simulation {
 		Matter.Body.applyForce(this.stadium, c, {x: dx*0.005, y: 0});
 
 		for (const body of this.bodies) {
-			body.force.y += (body.gravity || 1) * body.mass * 0.001;
+			body.force.y += (body.gravity || 1) * body.mass * 0.0001;
 		}
 	}
 
@@ -361,21 +361,15 @@ class Simulation {
 		const bottom = Matter.Bodies.rectangle(this.simWidth/2, (this.simHeight + h - t)/2, w - t, t, opts);
 		const top = Matter.Bodies.rectangle(this.simWidth/2, (this.simHeight - h + t)/2, w - t, t, opts);
 
-		this.stadium = Matter.Body.create({parts: [left, bottom, right, top]});
+		this.stadium = Matter.Body.create({
+			parts: [left, bottom, right, top],
+			frictionAir: 0,
+			mass: 1000,
+			restitution: 0.1,
+		});
 		this.stadium.height = h;
 		this.stadium.width = w;
 		this.addBodies(this.stadium, true);
-
-		/*
-		this.stadium_spring = Matter.Constraint.create({
-			pointA: {x: this.simWidth/2, y: this.simHeight/2},
-			bodyB: this.stadium,
-			pointB: {x: 0, y: 0},
-			stiffness: 0.01,
-			length: 0.0,
-			damping: 0.0,
-		});
-		this.addConstraints(this.stadium_spring);*/
 	}
 
 	clearBodies() {
@@ -493,7 +487,8 @@ function addBodiesScattered(sim, bodyList) {
 			render: {
 				fillStyle: color,
 				textStyle: textColor(color),
-			}
+			},
+			restitution: 0.1,
 		});
 		Matter.Body.setMass(body, Math.abs(density));
 		bodies.push(body);

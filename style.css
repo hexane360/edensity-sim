@@ -45,15 +45,15 @@ body {
   height: 100%;
 }
 h1 {
-  font-size: large;
-  margin-bottom: 2em;
+  font-size: x-large;
+  margin-bottom: 1em;
 }
 h2 {
   font-size: medium;
 }
 
 .sidebar-cont {
-  width: 380px;
+  width: 30em;
   overflow-y: auto;
   position: fixed;
   bottom: 0;
@@ -62,11 +62,46 @@ h2 {
 }
 
 .sidebar {
-  padding: 4ex 2em 4ex 2em;
+  padding: 1em;
+}
+
+.status div {
+  margin-top: 1em;
+  padding: 0.2em 1em;
+  background-color: var(--dark);
+  border-radius: 8px;
+
+  transition: height 1s, margin-top 1s, padding-top 1s, padding-bottom 1s, background-color 1s, opacity 0.5s linear;
+}
+
+.status .hidden {
+  color: transparent;
+  opacity: 0;
+  height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.status .failed {
+  background-color: var(--red);
+}
+
+.status .success {
+  background-color: var(--green);
+}
+
+.settings {
+  margin-top: 3em;
+}
+
+.setting {
+ margin-top: 1.5em;
 }
 
 .content {
-  margin-left: 380px;
+  margin-left: 30em;
   /*padding: 0 20px;*/
   height: 100%;
   display: flex;
@@ -139,11 +174,6 @@ h2 {
   display: none;
 }
 
-.info {
-  flex: 0 1 auto;
-  padding: 0 20px;
-}
-
 #sim {
   flex: 1 1 auto;
   display: flex;
@@ -158,6 +188,7 @@ h2 {
 }
 .dark text, .dark tspan { fill: black; }
 
+/*
 .hide {
   visibility: hidden;
   opacity: 0;
@@ -167,6 +198,7 @@ h2 {
   opacity: 1;
   transition: stroke 1s linear, color 1s linear, fill 1s linear, opacity 0.5s linear;
 }
+*/
 
 .flex {
   display: flex;

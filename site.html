@@ -15,28 +15,38 @@
   <div class="sidebar-cont">
     <div class="sidebar">
       <h1> Blaseball eDensity Simulator </h1>
-      <h2> Settings: </h2>
-      Use formula for
-      <select id="season">
-        <option value="15">Season 15</option>
-        <option value="14">Season 14</option>
-        <option value="12">Season 12-13</option>
-      </select>
-
-      <p>Simulation speed:</p>
-	  <div><input type="radio" name="speed" id="real" value="game"> <label for="game">In-game speed (1 day/day)</label></div>
-      <div><input type="radio" name="speed" id="real" value="real"> <label for="real">Real-world speed (1 day/hour)</label></div>
-	  <div><input type="radio" name="speed" id="real" value="0.1"> <label for="0.1">0.1 day/sec</label></div>
-	  <div><input type="radio" name="speed" id="real" value="0.5" checked> <label for="0.5">0.5 day/sec</label></div>
-	  <div><input type="radio" name="speed" id="real" value="1"> <label for="1">1 day/sec</label></div>
+      <div class="status" id="status"></div>
+      <div class="info">
+        <h1>eDensity for the <span class="team-icon"></span> <span class="team-name">Boston Flowers</span>:</h1>
+      </div>
+      <div class="settings">
+        <h2> Settings: </h2>
+        <div class="setting">
+          Use formula for
+          <select id="season">
+            <option value="15">Season 15</option>
+            <option value="14">Season 14</option>
+            <option value="12">Season 12-13</option>
+          </select>
+        </div>
+        <div class="setting">
+          <p>Simulation speed: (WIP)</p>
+	        <div><input type="radio" name="speed" id="real" value="game"> <label for="game">In-game speed (1 day/day)</label></div>
+          <div><input type="radio" name="speed" id="real" value="real"> <label for="real">Real-world speed (1 day/hour)</label></div>
+	        <div><input type="radio" name="speed" id="real" value="0.1"> <label for="0.1">0.1 day/sec</label></div>
+	        <div><input type="radio" name="speed" id="real" value="0.5" checked> <label for="0.5">0.5 day/sec</label></div>
+	        <div><input type="radio" name="speed" id="real" value="1"> <label for="1">1 day/sec</label></div>
+        </div>
+        <div class="setting">
+          <button id="reset">Reset Simulation</button>
+          <button id="reload">Reload Simulation Data</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="content">
     <div class="selector" id="team-selector"></div>
     <button class="collapse" id="selector-collapse" title="Collapse tab">^</button>
-    <div class="info">
-      <h1>eDensity for the <span class="team-icon"></span> <span class="team-name">Boston Flowers</span>:</h1>
-    </div>
     <div id="sim">
       <canvas id="canvas">
         eDensity Simulation

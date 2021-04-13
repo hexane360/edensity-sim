@@ -1,3 +1,92 @@
+class StatusLog {
+	constructor(elem) {
+		this.elem = elem;
+		this._ops = new Map();
+	}
+
+	register(key, text) {
+		if (this._ops.get(key)) {
+			return this._ops.get(key);
+		}
+		const elem = document.createElement("div");
+		elem.className = "status-msg hidden";
+		elem.innerHTML = text;
+		this._ops.set(key, elem);
+		this.elem.appendChild(elem);
+		window.getComputedStyle(elem).opacity; // force reflow
+		elem.classList.remove("hidden");
+	}
+
+	success(key, msg) {
+		const elem = this._ops.get(key);
+		if (!elem) return;
+		this._ops.delete(key);
+
+		elem.classList.add("success");
+		elem.innerHTML += msg;
+		setTimeout(() => this._finish(elem), 1000);
+	}
+
+	fail(key, msg) {
+		const elem = this._ops.get(key);
+		if (!elem) return;
+		this._ops.delete(key);
+
+		elem.classList.add("failed");
+		elem.innerHTML = msg;
+		setTimeout(() => this._finish(elem), 5000);
+	}
+
+	finish(key) {
+		const elem = this._ops.get(key);
+		if (!elem) return;
+		this._ops.delete(key);
+
+		_finish(elem);
+	}
+
+	_finish(elem) {
+		elem.classList.add("hidden");
+		setTimeout(() => this.elem.removeChild(elem), 5000);
+	}
+}
+
+statusLog = new StatusLog(document.getElementById('status'));
+
+async function json_request(url, status_msg, fail_msg, key) {
+	if (!fail_msg) {
+		status_msg = `${status_msg}...`
+		fail_msg = `Failed to ${status_msg[0].toLowerCase()}${status_msg.slice(1)}`;
+	}
+	key = key || status_msg;
+	statusLog.register(key, status_msg);
+	var response;
+	try {
+		response = await fetch(url);
+	} catch (e) {
+		statusLog.fail(key, `${fail_msg}`);
+		throw e;
+	}
+	if (!response.ok) {
+		const msg = `${fail_msg} (${response.status} ${response.statusText})`;
+		statusLog.fail(key, msg);
+		throw new Error(msg);
+	}
+	try {
+		const text = await response.text();
+		if (text.size == 0) { // accept empty JSON as null
+			statusLog.finish(key);
+			return null;
+		}
+		const result = JSON.parse(text);
+		statusLog.success(key, " Done");
+		return result;
+	} catch (e) {
+		statusLog.fail(key, `${fail_msg} (Couldn't parse JSON)`);
+		throw e;
+	}
+}
+
 function http_error(response, message) {
 	if (message) {
 		console.error(message);
@@ -9,13 +98,11 @@ function http_error(response, message) {
 }
 
 async function loadTeams(_force=false) {
-	//'https://cors-proxy.blaseball-reference.com/database/allTeams'
-	const response = await fetch('https://api.blaseball-reference.com/v2/teams');
-	if (!response.ok) {
-		return http_error(response, "Error fetching teams from blaseball.com:");
-	}
+	const data = await json_request(
+		'https://api.blaseball-reference.com/v2/teams',
+		"Fetching teams list",
+	);
 
-	const data = await response.json();
 	const teams = new Map();
 	for (const team of data) {
 		if (team.current_team_status !== "active") {
@@ -33,12 +120,11 @@ async function loadTeams(_force=false) {
 }
 
 async function loadStadiums(force=false) {
-	const response = await fetch('https://api.sibr.dev/chronicler/v1/stadiums');
-	if (!response.ok) {
-		return http_error(response, "Error fetching stadium information from chronicler:");
-	}
+	const data = await json_request(
+		'https://api.sibr.dev/chronicler/v1/stadiums',
+		"Fetching stadium information",
+	);
 
-	const data = await response.json();
 	await teams.load(force);
 
 	const stadiums = new Map();
@@ -63,6 +149,11 @@ async function loadChampionships(force=false) {
 	var playoffs = [];
 	const currentSeason = (await season.load(force)).seasonNumber;
 	for (var i = 0; i <= currentSeason; i++) {
+		playoffs.push(json_request(
+			`https://cors-proxy.blaseball-reference.com/database/playoffs?number=${i}`,
+			`Fetching season ${i} playoffs`,
+		));
+		/*
 		playoffs.push((async function() {
 			const response = await fetch(`https://cors-proxy.blaseball-reference.com/database/playoffs?number=${i}`);
 			if (!response.ok) {
@@ -77,98 +168,83 @@ async function loadChampionships(force=false) {
 				throw e;
 			}
 		})());
+		*/
 	}
 	const champs = new Map();
 	for (const t of (await teams.load(force)).keys()) {
 		champs.set(t, 0);
 	}
 	for (const playoff of await Promise.all(playoffs)) {
-		console.log(playoff);
-		if (!playoff) { continue; }
+		//console.log(playoff);
+		if (!playoff || !playoff.winner) continue;
 		mutateKey(champs, teams.byUUID.get(playoff.winner).url_slug, (wins) => wins+1);
 	}
 	return champs;
 }
 
 async function loadNoodle(force=false) {
-	const response = await fetch('https://cors-proxy.blaseball-reference.com/api/getIdols');
-	if (!response.ok) {
-		return http_error(response, "Error fetching noodle information:");
-	}
-
-	const data = await response.json();
+	const data = await json_request(
+		'https://cors-proxy.blaseball-reference.com/api/getIdols',
+		"Fetching idols board"
+	);
 	return data.data.strictlyConfidential;
 }
 
 async function loadSeason(force=false) {
-	var response = await fetch('https://api.blaseball-reference.com/v2/config');
-	if (!response.ok) {
-		return http_error(response, "Error fetching season information:");
-	}
+	const data = await json_request(
+		'https://api.blaseball-reference.com/v2/config',
+		"Fetching current season"
+	);
+	const season_number = data.defaults.season;
 
-	const season_number = (await response.json()).defaults.season;
-
-	response = await fetch(`https://cors-proxy.blaseball-reference.com/database/season?number=${season_number}`);
-	if (!response.ok) {
-		return http_error(response, "Error fetching season information:");
-	}
-	return await response.json();
+	return await json_request(
+		`https://cors-proxy.blaseball-reference.com/database/season?number=${season_number}`,
+		"Fetching season information"
+	);
 }
 
 async function loadStandings(force=false) {
-	// fetch season # (and maybe standings) from blaseball-reference
 	const standings_id = (await season.load(force)).standings;
 	if (!standings_id) { return null; }
 
 	//url escaping is for suckers
-	const response = await fetch(`https://cors-proxy.blaseball-reference.com/database/standings?id=${standings_id}`);
-	if (!response.ok) {
-		return http_error(response, "Error fetching standings:");
-	}
-	return await response.json();
+	return await json_request(
+		`https://cors-proxy.blaseball-reference.com/database/standings?id=${standings_id}`,
+		"Fetching standings"
+	);
 }
 
 async function loadTeamData(team, force=false) {
 	/// Load extended data for a team
 
+	const team_data = (await teams.load(force)).get(team);
+	const team_id = team_data.team_id;
+
 	const [
-		team_data,
 		stadium_data,
 		standings_data,
-		champs_data
+		champs_data,
+		roster_data,
+		native_team_data,
 	] = await Promise.all([
-		teams.load(force),
 		stadiums.load(force),
 		standings.load(force),
-		champs.load(force)
+		champs.load(force),
+		json_request(
+			`https://api.blaseball-reference.com/v1/currentRoster?slug=${team}&includeShadows=true`,
+			`Fetching ${team_data.nickname} roster`
+		),
+		json_request(
+			`https://cors-proxy.blaseball-reference.com/database/team?id=${team_id}`,
+			`Fetching ${team_data.nickname} information`
+		)
 	]);
-
-	const team_id = team_data.get(team).team_id;
-
-	const roster = (async function() {
-		const response = await fetch(`https://api.blaseball-reference.com/v1/currentRoster?slug=${team}&includeShadows=true`);
-		if (!response.ok) {
-			return http_error(response, "Error fetching roster information:");
-		}
-		return await response.json();
-	})();
-
-	const native_team = (async function() {
-		const response = await fetch(`https://cors-proxy.blaseball-reference.com/database/team?id=${team_id}`);
-		if (!response.ok) {
-			return http_error(response, "Error fetching team information:");
-		}
-		return await response.json();
-	})();
-
-	const [roster_data, native_team_data] = await Promise.all([roster, native_team]);
-	//load players
 
 	//fetch('https://api.blaseball-reference.com/v2/stats?type=season&group=hitting&fields=runs_batted_in&season=current&teamId=3f8bbb15-61c0-4e3f-8e4a-907a5fb1565e');
 
 	return {
 		// todo need # of championship wins
-		team: team_data.get(team),
+		team: team_data,
 		native_team: native_team_data,
 		stadium: stadium_data.get(team),
 		champs: champs_data.get(team),
