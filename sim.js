@@ -5,21 +5,23 @@ class Render {
 		this.cont = canvas.parentNode;
 		this.context = canvas.getContext('2d');
 
-		this.view = view; // viewport in world coordinates
-		this.aspectRatio = this.viewWidth / this.viewHeight;
+		this.minView = view; // must-see viewport in world coordinates
+		//this.aspectRatio = this.viewWidth / this.viewHeight;
+
+		this.setPixelRatio();
+
+		this.mouse = Matter.Mouse.create(this.canvas);
+
+		this.updateCanvasBounds();
+
+		window.addEventListener('resize', this.updateCanvasBounds.bind(this));
 
 		this.debugPts = {};
 		this.debugGons = {};
 
-		this.setPixelRatio();
-		window.addEventListener('resize', this.updateCanvasBounds.bind(this));
-
-		this.mouse = Matter.Mouse.create(this.canvas);
 		// remove unwanted event handlers
 		this.canvas.parentNode.removeEventListener('mousewheel', this.mouse.mousewheel);
 		this.canvas.parentNode.removeEventListener('DOMMouseScroll', this.mouse.mousewheel);
-
-		this.updateCanvasBounds();
 
 		this.tooltip = document.getElementById('sim-tooltip');
 		canvas.addEventListener('mousemove', this.updateTooltip.bind(this));
@@ -34,6 +36,9 @@ class Render {
 
 	get viewHeight() { return this.view.max.y - this.view.min.y; }
 	get viewWidth() { return this.view.max.x - this.view.min.x; }
+
+	get minViewHeight() { return this.minView.max.y - this.minView.min.y; }
+	get minViewWidth() { return this.minView.max.x - this.minView.min.x; }
 
 	setPixelRatio() {
 		const devicePixelRatio = window.devicePixelRatio || 1;
@@ -85,6 +90,7 @@ class Render {
 		var width = this.cont.clientWidth;
 		var height = this.cont.clientHeight;
 
+		/*
 		if (height * this.aspectRatio < width) {
 			// height limited
 			width = height * this.aspectRatio;
@@ -92,10 +98,29 @@ class Render {
 			// width limited
 			height = width / this.aspectRatio;
 		}
+		*/
 
 		this.bounds = {
 			min: {x: 0, y: 0},
 			max: {x: width, y: height},
+		}
+
+		this.view = {
+			min: {x: this.minView.min.x, y: this.minView.min.y },
+			max: {x: this.minView.max.x, y: this.minView.max.y },
+		};
+		//this.view = Object.assign({}, this.minView);
+
+		if (this.minViewHeight / height > this.minViewWidth / width) {
+			// keep height the same, extend width to take up excess space
+			const viewWidth = this.minViewHeight * width / height;
+			this.view.min.x -= (viewWidth-this.minViewWidth)/2;
+			this.view.max.x += (viewWidth-this.minViewWidth)/2;
+		} else {
+			// keep width the same, extend height
+			const viewHeight = this.minViewWidth * height / width;
+			this.view.min.y -= (viewHeight-this.minViewHeight)/2;
+			this.view.max.y += (viewHeight-this.minViewHeight)/2;
 		}
 
 		this.canvas.width = width * this.pixelRatio;
@@ -109,11 +134,14 @@ class Render {
 		});
 		Matter.Mouse.setOffset(this.mouse, this.view.min);
 
-		this.context.setTransform(
+		this.context.setTransform(1, 0, 0, 1, 0, 0);
+		this.context.scale(this.canvas.width / this.viewWidth, this.canvas.height / this.viewHeight);
+		this.context.translate(-this.view.min.x, -this.view.min.y);
+		/*
+		this.context.transform(
 			this.canvas.width / this.viewWidth, 0, 0,
 			this.canvas.height / this.viewHeight, 0, 0
-		);
-		this.context.translate(-this.bounds.min.x, -this.bounds.min.y);
+		);*/
 	}
 
 	run() {
