@@ -214,41 +214,46 @@ async function loadStandings(force=false) {
 	);
 }
 
-async function loadTeamData(team, force=false) {
+async function loadTeamData(teamName, force=false) {
 	/// Load extended data for a team
 
-	const team_data = (await teams.load(force)).get(team);
-	const team_id = team_data.team_id;
+	const basic_data = (await teams.load(force)).get(teamName);
+	const team_id = basic_data.team_id;
+
+	const stadium = stadiums.load(force);
+	const standing = standings.load(force);
+
+	const team_data = await json_request(
+		`https://cors-proxy.blaseball-reference.com/database/team?id=${team_id}`,
+		`Fetching ${basic_data.nickname} information`
+	);
+
+	let player_ids = [];
+	for (key of ["lineup", "rotation", "bench", "bullpen"]) {
+		player_ids = player_ids.concat(team_data[key]);
+	}
 
 	const [
 		stadium_data,
 		standings_data,
-		roster_data,
-		native_team_data,
+		roster_data
 	] = await Promise.all([
-		stadiums.load(force),
-		standings.load(force),
+		stadium,
+		standing,
 		json_request(
-			`https://api.blaseball-reference.com/v1/currentRoster?slug=${team}&includeShadows=true`,
-			`Fetching ${team_data.nickname} roster`
-		),
-		json_request(
-			`https://cors-proxy.blaseball-reference.com/database/team?id=${team_id}`,
-			`Fetching ${team_data.nickname} information`
+			`https://cors-proxy.blaseball-reference.com/database/players?ids=${player_ids.join(",")}`,
+			`Fetching ${basic_data.nickname} roster`
 		)
 	]);
 
-	//fetch('https://api.blaseball-reference.com/v2/stats?type=season&group=hitting&fields=runs_batted_in&season=current&teamId=3f8bbb15-61c0-4e3f-8e4a-907a5fb1565e');
-
 	return {
-		// todo need # of championship wins
+		name: teamName,
 		team: team_data,
-		native_team: native_team_data,
-		stadium: stadium_data.get(team),
-		champs: native_team_data.championships,
+		stadium: stadium_data.get(teamName),
+		champs: team_data.championships,
 		runs: standings_data.runs[team_id],
 		wins: standings_data.wins[team_id],
-		net_shame: native_team_data.totalShamings - native_team_data.totalShames,
+		net_shame: team_data.totalShamings - team_data.totalShames,
 		roster: roster_data,
 	}
 }
