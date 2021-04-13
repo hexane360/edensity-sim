@@ -295,9 +295,11 @@ class Simulation {
 			mouse: this.render.mouse,
 			constraint: {
 				stiffness: 0.2,
+				angularStiffness: 0.2,
 				render: {visible: false}
 			}
 		});
+
 
 		this.bodies = [];
 		this.persistentBodies = [];
@@ -368,20 +370,28 @@ class Simulation {
 			const buoyancy_center = Matter.Vertices.centre(water_pts);
 			this.render.debugPts.buoyancy = buoyancy_center;
 
+			// apply a buoyancy force to the stadium
 			Matter.Body.applyForce(this.stadium, buoyancy_center, {x: 0, y: -this.imDensity*water_area});
 		}
 
-		const dx = this.simWidth/2 - c.x;
-		Matter.Body.applyForce(this.stadium, c, {x: dx*0.005, y: 0});
+		// apply a constant restoring acceleration to each body to keep the simulation near the center
+		const dx = c.x - this.simWidth/2;
+		const vx = this.stadium.velocity.x;
+		let accel = -dx*0.000005 - vx*0.0001;
+		if (this.mouseConstraint.body === this.stadium)
+			accel = 0; // disable restoring acceleration while dragging
+
+		this.stadium.force.x += accel * this.stadium.mass; // apply restoring force to stadium
 
 		for (const body of this.bodies) {
-			body.force.y += (body.gravity || 1) * body.mass * 0.001;
+			body.force.x += accel * body.mass; // apply restoring force to each body
+			body.force.y += (body.gravity || 1) * body.mass * 0.001; // apply gravity to each body
 		}
 	}
 
 	addStadium() {
 		const t = 50; // wall thickness
-		const h = this.simHeight * 1.2; // wall height
+		const h = this.simHeight * 1.4; // wall height
 		const w = this.simWidth * 0.9; // wall width
 
 		const opts = {label: undefined, render: {fillStyle: "#ffffff"}};
