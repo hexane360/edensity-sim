@@ -448,36 +448,43 @@ function updateSimulationData(simulation, data, noodle) {
 	console.log("noodle: " + noodle);
 	console.log("net shame: " + data.net_shame);
 
-	//season 14: players + runs + 10*wins + 5*netShame + 99*#champs + 5*grand + 5*fort + 500*filth + 100*parkmods
+	//season 14: players + runs + 10*wins + 5*netShame + 33*#champs + 100*grand + 100*fort + 500*filth + 50*parkmods
 	var bodies = [
 		[data.runs, "Runs", performanceColor],
 		[10*data.wins, "Wins", performanceColor],
-		[99*data.champs, "Champs", performanceColor],
 		[5*data.net_shame, "Shame", performanceColor],
+		[33*data.champs, "Champs", performanceColor],
+		[100*data.stadium.grandiosity, "Grandiosity", stadiumColor],
+		[100*data.stadium.fortification, "Fortification", stadiumColor],
 		[500*data.stadium.filthiness, "Filthiness", stadiumColor],
-		[5*data.stadium.grandiosity, "Grandiosity", stadiumColor],
 	];
 
 	for (mod of data.stadium.mods) {
-		bodies.push([100, mod, stadiumColor]);
+		bodies.push([50, mod, stadiumColor]);
 	}
 
 	for (player of data.roster) {
-		bodies.push([2*player.soul, player.player_name.split(" ").join("\n"), playerColor]);
+		bodies.push([calculatePlayerDensity(player), player.player_name.split(" ").join("\n"), playerColor]);
 	}
 
-	//todo deal with negative shame
+	let totalDensity = 0;
+	for (body of bodies) {
+		totalDensity += body[0];
+	}
+
+	updateTotalDensity(totalDensity, data.native_team.eDensity);
 
 	simulation.clearBodies();
 	addBodiesScattered(simulation, bodies);
-	//simulation.addBodies(makeBody(100, [25, 25]));
 	simulation.run();
 }
 
 function calculatePlayerDensity(player) {
 	//7*totalRating + 2*soul + 6.5*#ego + 26*#perk
 
-	return player;
+	const totalRating = Number(player.pitching_rating) + Number(player.baserunning_rating) + Number(player.batting_rating) + Number(player.defense_rating);
+	return 7*totalRating + 2*player.soul;
+	//return 7*totalRating + 2*player.soul + 6.5* + 26*;
 }
 
 function textColor(color) {

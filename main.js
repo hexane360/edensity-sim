@@ -16,6 +16,11 @@ window.onload = function () {
 	loadSimulation(); // start loading simulation data
 };
 
+function updateTotalDensity(calculated, actual) {
+	document.getElementById('actualDensity').innerHTML = actual.toFixed(3);
+	document.getElementById('calcDensity').innerHTML = calculated.toFixed(3);
+}
+
 class LazyData {
 	constructor(load_function) {
 		this.load_function = load_function;
