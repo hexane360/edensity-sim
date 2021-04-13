@@ -42,7 +42,7 @@ class StatusLog {
 		if (!elem) return;
 		this._ops.delete(key);
 
-		_finish(elem);
+		this._finish(elem);
 	}
 
 	_finish(elem) {
@@ -74,7 +74,7 @@ async function json_request(url, status_msg, fail_msg, key) {
 	}
 	try {
 		const text = await response.text();
-		if (text.size == 0) { // accept empty JSON as null
+		if (text.trim().length == 0) { // accept empty JSON as null
 			statusLog.finish(key);
 			return null;
 		}

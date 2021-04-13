@@ -245,6 +245,7 @@ class Simulation {
 		this.simHeight = 1000;
 
 		this.world.waterHeight = this.simHeight * 0.4;
+		//this.imDensity = 0.000002;
 		this.imDensity = 0.000002;
 
 		this.spawnBounds = {
@@ -346,7 +347,7 @@ class Simulation {
 		Matter.Body.applyForce(this.stadium, c, {x: dx*0.005, y: 0});
 
 		for (const body of this.bodies) {
-			body.force.y += (body.gravity || 1) * body.mass * 0.0001;
+			body.force.y += (body.gravity || 1) * body.mass * 0.001;
 		}
 	}
 
