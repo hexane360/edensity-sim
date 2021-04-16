@@ -18,13 +18,13 @@ document.getElementById('selector-collapse').onclick = function() {
 
 
 async function loadHits() {
-	const url = encodeURIComponent(window.location.href.replace(window.location.search, ''));
-	const resp = await fetch(
-		`https://hitcounter.pythonanywhere.com/count/tag.svg?url=${url}`,
-		{ method: "GET" }
-	);
-	const svg = await resp.text();
-	//<img src="https://hitcounter.pythonanywhere.com/count/tag.svg?url=https%3A%2F%2Fhexane360.github.io%2Fedensity-sim%2Fsite.html" alt="Hits">
+	try {
+		const url = encodeURIComponent(window.location.href.replace(window.location.search, ''));
+		const resp = await fetch(`https://hitcounter.pythonanywhere.com/count?url=${url}`);
+		return Number(await resp.text());
+	} catch (e) {
+		return null;
+	}
 }
 
 loadHits();
@@ -65,6 +65,7 @@ class SidebarResizer {
 			const newWidth = event.clientX - this.xOffset;
 			this.resize(newWidth);
 		}
+		event.preventDefault();
 	}
 }
 
