@@ -500,6 +500,7 @@ function updateSimulationData(simulation, data, noodle) {
 		{density: 100*data.stadium.grandiosity, label: "Grandiosity", color: stadiumColor},
 		{density: 100*data.stadium.fortification, label: "Fortification", color: stadiumColor},
 		{density: 500*data.stadium.filthiness, label: "Filthiness", color: stadiumColor},
+		{density: -data.stadium.birds, label: "Birds", color: stadiumColor},
 	];
 
 	for (mod of data.stadium.mods) {
