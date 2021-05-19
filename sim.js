@@ -243,19 +243,11 @@ class Simulation {
 
 		Matter.Events.on(this.engine, 'beforeUpdate', this.applyForces.bind(this));
 
-		this.simWidth = 2400; //1800;
+		this.simWidth = 2400;
 		this.simHeight = 1400;
 
-		this.world.waterHeight = this.simHeight * 0.2;
+		this.world.waterHeight = this.simHeight * 0.6;
 		this.imDensity = 0.000002;
-
-		/*
-		this.spawnBounds = {
-			min: {x: this.simWidth*0.2, y: this.simWidth*0.1},
-			width: this.simWidth*0.6,
-			height: this.simWidth*0.4,
-		}
-		*/
 
 		this.scale = 8;
 
