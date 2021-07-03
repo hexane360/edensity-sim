@@ -479,6 +479,8 @@ function updateSimulationData(simulation, data, noodle) {
 	console.log("noodle: " + noodle);
 	console.log("net shame: " + data.net_shame);
 
+	var light_switch = (data.stadium.renoLog.light_switch_toggle % 2 == 0) ? 1 : -1;
+
 
 	//season 12/13: players + runs + 10*wins + 5*netShame + 99*#champs + 5*grand + 5*fort + 500*filth
 	//season 14: players + runs + 10*wins + 5*netShame + 33*#champs + 100*grand + 100*fort + 500*filth + 50*parkmods
@@ -489,15 +491,17 @@ function updateSimulationData(simulation, data, noodle) {
 		{density: 5*data.net_shame, label: "Shame", color: performanceColor, tooltip: `Total Net Shame: ${data.net_shame}`},
 		{density: 33*data.champs, label: "Champs", color: performanceColor, tooltip: `Championships: ${data.champs}`},
 		// stadium stats
-		{density: 100*data.stadium.grandiosity, label: "Grandiosity", color: stadiumColor},
-		{density: 100*data.stadium.fortification, label: "Fortification", color: stadiumColor},
-		{density: 500*data.stadium.filthiness, label: "Filthiness", color: stadiumColor},
-		{density: -data.stadium.birds, label: "Birds", color: stadiumColor},
+		{density: light_switch*100*data.stadium.grandiosity, label: "Grandiosity", color: stadiumColor},
+		{density: light_switch*100*data.stadium.fortification, label: "Fortification", color: stadiumColor},
+		{density: light_switch*500*data.stadium.filthiness, label: "Filthiness", color: stadiumColor},
+		{density: light_switch*-data.stadium.birds, label: "Birds", color: stadiumColor},
+		{density: light_switch*-0.1*(data.stadium.state.air_balloons || 0), label: "Air Balloons", color: stadiumColor},
+		{density: light_switch*-10*(data.stadium.state.flood_balloons || 0), label: "Flood Balloons", color: stadiumColor},
 	];
 
 	for (mod of data.stadium.mods) {
 		// stadium mods
-		bodies.push({density: 50, label: mod, color: stadiumColor});
+		bodies.push({density: light_switch*50, label: mod, color: stadiumColor});
 	}
 
 	for (player of data.roster) {

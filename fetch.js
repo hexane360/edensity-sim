@@ -105,6 +105,7 @@ async function loadTeams(_force=false) {
 
 	const teams = new Map();
 	for (const team of data) {
+		console.log(team)
 		if (team.current_team_status !== "active") {
 			//console.log("Skipping hidden team " + team.fullName);
 			continue;
