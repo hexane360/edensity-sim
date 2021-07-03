@@ -243,8 +243,8 @@ class Simulation {
 
 		Matter.Events.on(this.engine, 'beforeUpdate', this.applyForces.bind(this));
 
-		this.simWidth = 2400;
-		this.simHeight = 1400;
+		this.simWidth = 2400*2;
+		this.simHeight = 1400*2;
 
 		this.world.waterHeight = this.simHeight * 0.6;
 		this.imDensity = 0.000002;
@@ -334,9 +334,9 @@ class Simulation {
 
 	addStadium() {
 		const t = 80; // wall thickness
-		const h = this.simHeight * 0.9; // wall height
-		const w = this.simWidth * 0.9; // wall width
-		const d = this.simHeight * 0.2; // hull dip
+		const h = this.simHeight * 0.5; // wall height
+		const w = this.simWidth * 0.5; // wall width
+		const d = this.simHeight * 0.1; // hull dip
 		const r = w * 1.5;
 
 		const outer = [
