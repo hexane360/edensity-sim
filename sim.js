@@ -469,6 +469,8 @@ const playerColor = "#0000FF";
 const performanceColor = "#FF0000";
 const stadiumColor = "#00FF00";
 
+const zeroDensityMods = ['GRAPHENE', 'OPEN_FLOOR_PLAN']
+
 function updateSimulationData(simulation, data, noodle) {
 	console.log("team: " + data.name);
 	console.log("roster.length: " + data.roster.length);
@@ -481,7 +483,6 @@ function updateSimulationData(simulation, data, noodle) {
 
 	var light_switch = ((data.stadium.renoLog.light_switch_toggle || 0) % 2 == 0) ? 1 : -1;
 
-
 	//season 12/13: players + runs + 10*wins + 5*netShame + 99*#champs + 5*grand + 5*fort + 500*filth
 	//season 14: players + runs + 10*wins + 5*netShame + 33*#champs + 100*grand + 100*fort + 500*filth + 50*parkmods
 	var bodies = [
@@ -491,17 +492,41 @@ function updateSimulationData(simulation, data, noodle) {
 		{density: 5*data.net_shame, label: "Shame", color: performanceColor, tooltip: `Total Net Shame: ${data.net_shame}`},
 		{density: 33*data.champs, label: "Champs", color: performanceColor, tooltip: `Championships: ${data.champs}`},
 		// stadium stats
-		{density: light_switch*100*data.stadium.grandiosity, label: "Grandiosity", color: stadiumColor},
-		{density: light_switch*100*data.stadium.fortification, label: "Fortification", color: stadiumColor},
 		{density: light_switch*500*data.stadium.filthiness, label: "Filthiness", color: stadiumColor},
 		{density: light_switch*-data.stadium.birds, label: "Birds", color: stadiumColor},
 		{density: light_switch*-0.1*(data.stadium.state.air_balloons || 0), label: "Air Balloons", color: stadiumColor, tooltip: `Air Balloons: ${data.stadium.state.air_balloons || 0}`},
 		{density: light_switch*-10*(data.stadium.state.flood_balloons || 0), label: "Flood Balloons", color: stadiumColor, tooltip: `Flood Balloons: ${data.stadium.state.flood_balloons || 0}`},
 	];
 
+	if (data.stadium.renoLog.open_floor_plan_mod) {
+		bodies.push({density: light_switch*5*data.stadium.grandiosity, label: "Grandiosity", color: stadiumColor,
+			tooltip: "Grandiosity (with Open Floor Plan)"})
+	} else if (data.stadium.renoLog.condensed_floor_plan_mod) {
+		bodies.push({density: light_switch*500*data.stadium.grandiosity, label: "Grandiosity", color: stadiumColor,
+			tooltip: "Grandiosity (with Condensed Floor Plan)"})
+	} else {
+		bodies.push(
+			{density: light_switch*100*data.stadium.grandiosity, label: "Grandiosity", color: stadiumColor})
+	}
+
+	if (data.stadium.renoLog.graphene_mod) {
+		bodies.push({
+			density: light_switch * 5 * data.stadium.fortification, label: "Fortification", color: stadiumColor,
+			tooltip: "Fortification (with Graphene)"
+		})
+	} else if (data.stadium.renoLog.antigraphene_mod) {
+		bodies.push({density: light_switch*500*data.stadium.fortification, label: "Fortification", color: stadiumColor,
+			tooltip: "Fortification (with Antigraphene)"})
+	} else {
+		bodies.push(
+			{density: light_switch*100*data.stadium.fortification, label: "Fortification", color: stadiumColor})
+	}
+
 	for (mod of data.stadium.mods) {
 		// stadium mods
-		bodies.push({density: light_switch*50, label: mod, color: stadiumColor});
+		if (!zeroDensityMods.includes(mod)) {
+			bodies.push({density: light_switch*50, label: mod, color: stadiumColor});
+		}
 	}
 
 	for (player of data.roster) {
