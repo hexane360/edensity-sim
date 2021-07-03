@@ -478,6 +478,7 @@ function updateSimulationData(simulation, data, noodle) {
 	console.log("wins: " + data.wins);
 	console.log("runs: " + data.runs);
 	console.log("champs: " + data.champs);
+	console.log("underchamps: " + data.underchamps);
 	console.log("noodle: " + noodle);
 	console.log("net shame: " + data.net_shame);
 
@@ -491,6 +492,7 @@ function updateSimulationData(simulation, data, noodle) {
 		{density: 10*data.wins, label: "Wins", color: performanceColor, tooltip: `Total Wins: ${data.wins}`},
 		{density: 5*data.net_shame, label: "Shame", color: performanceColor, tooltip: `Total Net Shame: ${data.net_shame}`},
 		{density: 33*data.champs, label: "Champs", color: performanceColor, tooltip: `Championships: ${data.champs}`},
+		{density: -33*data.underchamps, label: "Underchamps", color: performanceColor, tooltip: `Underchampionships: ${data.underchamps}`},
 		// stadium stats
 		{density: light_switch*500*data.stadium.filthiness, label: "Filthiness", color: stadiumColor},
 		{density: light_switch*-data.stadium.birds, label: "Birds", color: stadiumColor},

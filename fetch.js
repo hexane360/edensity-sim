@@ -252,6 +252,7 @@ async function loadTeamData(teamName, force=false) {
 		team: team_data,
 		stadium: stadium_data.get(teamName),
 		champs: team_data.championships,
+		underchamps: team_data.underchampionships,
 		runs: standings_data.runs[team_id],
 		wins: standings_data.wins[team_id],
 		net_shame: team_data.totalShamings - team_data.totalShames,
