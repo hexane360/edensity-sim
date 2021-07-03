@@ -479,7 +479,7 @@ function updateSimulationData(simulation, data, noodle) {
 	console.log("noodle: " + noodle);
 	console.log("net shame: " + data.net_shame);
 
-	var light_switch = (data.stadium.renoLog.light_switch_toggle % 2 == 0) ? 1 : -1;
+	var light_switch = ((data.stadium.renoLog.light_switch_toggle || 0) % 2 == 0) ? 1 : -1;
 
 
 	//season 12/13: players + runs + 10*wins + 5*netShame + 99*#champs + 5*grand + 5*fort + 500*filth
@@ -495,8 +495,8 @@ function updateSimulationData(simulation, data, noodle) {
 		{density: light_switch*100*data.stadium.fortification, label: "Fortification", color: stadiumColor},
 		{density: light_switch*500*data.stadium.filthiness, label: "Filthiness", color: stadiumColor},
 		{density: light_switch*-data.stadium.birds, label: "Birds", color: stadiumColor},
-		{density: light_switch*-0.1*(data.stadium.state.air_balloons || 0), label: "Air Balloons", color: stadiumColor},
-		{density: light_switch*-10*(data.stadium.state.flood_balloons || 0), label: "Flood Balloons", color: stadiumColor},
+		{density: light_switch*-0.1*(data.stadium.state.air_balloons || 0), label: "Air Balloons", color: stadiumColor, tooltip: `Air Balloons: ${data.stadium.state.air_balloons || 0}`},
+		{density: light_switch*-10*(data.stadium.state.flood_balloons || 0), label: "Flood Balloons", color: stadiumColor, tooltip: `Flood Balloons: ${data.stadium.state.flood_balloons || 0}`},
 	];
 
 	for (mod of data.stadium.mods) {
