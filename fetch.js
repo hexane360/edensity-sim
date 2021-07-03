@@ -229,7 +229,7 @@ async function loadTeamData(teamName, force=false) {
 	);
 
 	let player_ids = [];
-	for (key of ["lineup", "rotation", "bench", "bullpen"]) {
+	for (key of ["lineup", "rotation", "shadows"]) {
 		player_ids = player_ids.concat(team_data[key]);
 	}
 
