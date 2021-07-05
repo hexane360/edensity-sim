@@ -105,7 +105,8 @@ async function loadTeams(_force=false) {
 
 	const teams = new Map();
 	for (const team of data) {
-		if (team.current_team_status !== "active") {
+		console.log(team)
+		if (team.league_id === null) {
 			//console.log("Skipping hidden team " + team.fullName);
 			continue;
 		}
@@ -229,7 +230,7 @@ async function loadTeamData(teamName, force=false) {
 	);
 
 	let player_ids = [];
-	for (key of ["lineup", "rotation", "bench", "bullpen"]) {
+	for (key of ["lineup", "rotation", "shadows"]) {
 		player_ids = player_ids.concat(team_data[key]);
 	}
 
@@ -251,6 +252,7 @@ async function loadTeamData(teamName, force=false) {
 		team: team_data,
 		stadium: stadium_data.get(teamName),
 		champs: team_data.championships,
+		underchamps: team_data.underchampionships,
 		runs: standings_data.runs[team_id],
 		wins: standings_data.wins[team_id],
 		net_shame: team_data.totalShamings - team_data.totalShames,
