@@ -516,7 +516,7 @@ function updateSimulationData(simulation, data, noodle) {
 			density: light_switch * 5 * data.stadium.fortification, label: "Fortification", color: stadiumColor,
 			tooltip: "Fortification (with Graphene)"
 		})
-	} else if (data.stadium.renoLog.antigraphene_mod) {
+	} else if (data.stadium.renoLog.anti_graphene_mod) {
 		bodies.push({density: light_switch*500*data.stadium.fortification, label: "Fortification", color: stadiumColor,
 			tooltip: "Fortification (with Antigraphene)"})
 	} else {
